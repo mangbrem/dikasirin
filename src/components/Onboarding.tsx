@@ -43,7 +43,8 @@ const tutorialSlides = [
 ];
 
 export default function Onboarding({ onComplete }: OnboardingProps) {
-  const [step, setStep] = useState(0); // 0-3 = tutorial, 4 = install, 5 = store setup
+  // Steps: tutorial slides (0-3), store setup (4), install (5)
+  const [step, setStep] = useState(0);
   const [storeName, setStoreName] = useState('');
   const [address, setAddress] = useState('');
   const [phone, setPhone] = useState('');
@@ -51,38 +52,37 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
   const [saving, setSaving] = useState(false);
   const [themeColor, setThemeColorState] = useState('25');
   const [installDone, setInstallDone] = useState(false);
+  const [storeSetupDone, setStoreSetupDone] = useState(false);
   const { canInstall, isInstalled, install } = usePWAInstall();
 
-  // Steps: tutorial slides (0-3), install (4), store setup (5)
-  const totalSteps = tutorialSlides.length + 2;
-  const isInstallStep = step === tutorialSlides.length;
-  const isStoreStep = step === tutorialSlides.length + 1;
+  const totalSteps = tutorialSlides.length + 2; // tutorials + store setup + install
+  const isStoreStep = step === tutorialSlides.length;
+  const isInstallStep = step === tutorialSlides.length + 1;
 
   const seedDummyData = async () => {
+    const now = new Date();
     const dummyProducts = [
-      { name: 'Nasi Goreng Spesial', sku: 'NG001', categoryId: 1, price: 15000, hpp: 8000, stock: 50, unit: 'porsi', createdAt: new Date(), updatedAt: new Date() },
-      { name: 'Mie Goreng', sku: 'MG001', categoryId: 1, price: 12000, hpp: 6000, stock: 40, unit: 'porsi', createdAt: new Date(), updatedAt: new Date() },
-      { name: 'Ayam Bakar', sku: 'AB001', categoryId: 1, price: 20000, hpp: 12000, stock: 30, unit: 'porsi', createdAt: new Date(), updatedAt: new Date() },
-      { name: 'Sate Ayam (10 tusuk)', sku: 'SA001', categoryId: 1, price: 18000, hpp: 10000, stock: 25, unit: 'porsi', createdAt: new Date(), updatedAt: new Date() },
-      { name: 'Bakso Urat', sku: 'BU001', categoryId: 1, price: 15000, hpp: 7000, stock: 35, unit: 'mangkok', createdAt: new Date(), updatedAt: new Date() },
-      { name: 'Es Teh Manis', sku: 'ET001', categoryId: 2, price: 5000, hpp: 1500, stock: 100, unit: 'gelas', createdAt: new Date(), updatedAt: new Date() },
-      { name: 'Es Jeruk', sku: 'EJ001', categoryId: 2, price: 7000, hpp: 2500, stock: 80, unit: 'gelas', createdAt: new Date(), updatedAt: new Date() },
-      { name: 'Kopi Susu', sku: 'KS001', categoryId: 2, price: 10000, hpp: 4000, stock: 60, unit: 'gelas', createdAt: new Date(), updatedAt: new Date() },
-      { name: 'Air Mineral', sku: 'AM001', categoryId: 2, price: 4000, hpp: 2000, stock: 120, unit: 'botol', createdAt: new Date(), updatedAt: new Date() },
-      { name: 'Tisu', sku: 'TS001', categoryId: 3, price: 2000, hpp: 1000, stock: 200, unit: 'pcs', createdAt: new Date(), updatedAt: new Date() },
-      { name: 'Kerupuk', sku: 'KR001', categoryId: 3, price: 3000, hpp: 1500, stock: 150, unit: 'bungkus', createdAt: new Date(), updatedAt: new Date() },
+      { name: 'Nasi Goreng Spesial', sku: 'NG001', categoryId: 1, price: 15000, hpp: 8000, stock: 50, unit: 'porsi', createdAt: now, updatedAt: now, isDeleted: 0, deletedAt: null },
+      { name: 'Mie Goreng', sku: 'MG001', categoryId: 1, price: 12000, hpp: 6000, stock: 40, unit: 'porsi', createdAt: now, updatedAt: now, isDeleted: 0, deletedAt: null },
+      { name: 'Ayam Bakar', sku: 'AB001', categoryId: 1, price: 20000, hpp: 12000, stock: 30, unit: 'porsi', createdAt: now, updatedAt: now, isDeleted: 0, deletedAt: null },
+      { name: 'Sate Ayam (10 tusuk)', sku: 'SA001', categoryId: 1, price: 18000, hpp: 10000, stock: 25, unit: 'porsi', createdAt: now, updatedAt: now, isDeleted: 0, deletedAt: null },
+      { name: 'Bakso Urat', sku: 'BU001', categoryId: 1, price: 15000, hpp: 7000, stock: 35, unit: 'mangkok', createdAt: now, updatedAt: now, isDeleted: 0, deletedAt: null },
+      { name: 'Es Teh Manis', sku: 'ET001', categoryId: 2, price: 5000, hpp: 1500, stock: 100, unit: 'gelas', createdAt: now, updatedAt: now, isDeleted: 0, deletedAt: null },
+      { name: 'Es Jeruk', sku: 'EJ001', categoryId: 2, price: 7000, hpp: 2500, stock: 80, unit: 'gelas', createdAt: now, updatedAt: now, isDeleted: 0, deletedAt: null },
+      { name: 'Kopi Susu', sku: 'KS001', categoryId: 2, price: 10000, hpp: 4000, stock: 60, unit: 'gelas', createdAt: now, updatedAt: now, isDeleted: 0, deletedAt: null },
+      { name: 'Air Mineral', sku: 'AM001', categoryId: 2, price: 4000, hpp: 2000, stock: 120, unit: 'botol', createdAt: now, updatedAt: now, isDeleted: 0, deletedAt: null },
+      { name: 'Tisu', sku: 'TS001', categoryId: 3, price: 2000, hpp: 1000, stock: 200, unit: 'pcs', createdAt: now, updatedAt: now, isDeleted: 0, deletedAt: null },
+      { name: 'Kerupuk', sku: 'KR001', categoryId: 3, price: 3000, hpp: 1500, stock: 150, unit: 'bungkus', createdAt: now, updatedAt: now, isDeleted: 0, deletedAt: null },
     ];
 
     const dummySuppliers = [
-      { name: 'PT Bahan Segar', phone: '08111222333', address: 'Jl. Pasar Baru No. 15', notes: 'Supplier sayur & daging', createdAt: new Date() },
-      { name: 'UD Minuman Jaya', phone: '08222333444', address: 'Jl. Raya Industri No. 8', notes: 'Supplier minuman', createdAt: new Date() },
+      { name: 'PT Bahan Segar', phone: '08111222333', address: 'Jl. Pasar Baru No. 15', notes: 'Supplier sayur & daging', createdAt: now, isDeleted: 0, deletedAt: null },
+      { name: 'UD Minuman Jaya', phone: '08222333444', address: 'Jl. Raya Industri No. 8', notes: 'Supplier minuman', createdAt: now, isDeleted: 0, deletedAt: null },
     ];
 
     await db.products.bulkAdd(dummyProducts);
     await db.suppliers.bulkAdd(dummySuppliers);
 
-    // Add some dummy transactions for today
-    const now = new Date();
     const discNull: 'percentage' | 'nominal' | null = null;
     const txs = [
       {
@@ -107,7 +107,7 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
     await db.transactions.bulkAdd(txs);
   };
 
-  const handleFinish = async () => {
+  const handleSaveStore = async () => {
     if (!storeName.trim()) return;
     setSaving(true);
     try {
@@ -137,10 +137,16 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
         toast.success('Data contoh berhasil dimuat!');
       }
 
-      onComplete();
+      setStoreSetupDone(true);
+      // Move to install step
+      setStep(s => s + 1);
     } finally {
       setSaving(false);
     }
+  };
+
+  const handleFinish = () => {
+    onComplete();
   };
 
   return (
@@ -159,7 +165,7 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
         </div>
 
       <div className="flex-1 flex flex-col px-6">
-        {!isInstallStep && !isStoreStep ? (
+        {!isStoreStep && !isInstallStep ? (
           /* Tutorial slides */
           <div className="flex-1 flex flex-col items-center justify-center text-center space-y-6">
             {(() => {
@@ -178,53 +184,7 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
               );
             })()}
           </div>
-        ) : isInstallStep ? (
-          /* Install as app step */
-          <div className="flex-1 flex flex-col items-center justify-center text-center space-y-6">
-            <div className={cn('w-24 h-24 rounded-3xl flex items-center justify-center', 
-              isInstalled || installDone ? 'text-success bg-success/10' : 'text-primary bg-primary/10'
-            )}>
-              {isInstalled || installDone ? <CheckCircle2 className="w-12 h-12" /> : <Download className="w-12 h-12" />}
-            </div>
-            <div className="space-y-3">
-              <h2 className="text-2xl font-bold tracking-tight">
-                {isInstalled || installDone ? 'Sudah Terinstall! ✅' : 'Install di HP Kamu'}
-              </h2>
-              <p className="text-muted-foreground leading-relaxed max-w-xs mx-auto">
-                {isInstalled || installDone 
-                  ? 'KasirGratisan sudah terinstall sebagai aplikasi. Kamu bisa buka langsung dari home screen!'
-                  : 'Jadikan KasirGratisan sebagai aplikasi di HP kamu. Akses lebih cepat langsung dari home screen, tanpa buka browser!'}
-              </p>
-            </div>
-            {!isInstalled && !installDone && (
-              canInstall ? (
-                <Button
-                  size="lg"
-                  className="h-12 px-8 text-base font-semibold"
-                  onClick={async () => {
-                    const ok = await install();
-                    if (ok) {
-                      setInstallDone(true);
-                      toast.success('Berhasil install KasirGratisan!');
-                    }
-                  }}
-                >
-                  <Download className="w-5 h-5 mr-2" />
-                  Install Sekarang
-                </Button>
-              ) : (
-                <div className="space-y-3 max-w-xs">
-                  <p className="text-sm text-muted-foreground">
-                    Untuk install, buka di browser <strong>Chrome</strong> lalu ketuk menu (⋮) → <strong>"Add to Home screen"</strong> atau <strong>"Install app"</strong>.
-                  </p>
-                  <p className="text-xs text-muted-foreground/70">
-                    Di Safari iOS: ketuk tombol Share (↑) → "Add to Home Screen"
-                  </p>
-                </div>
-              )
-            )}
-          </div>
-        ) : (
+        ) : isStoreStep ? (
           /* Store setup */
           <div className="flex-1 flex flex-col overflow-y-auto space-y-6 py-4" style={{ WebkitOverflowScrolling: 'touch' }}>
             <div className="text-center space-y-2">
@@ -312,12 +272,58 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
               </div>
             </div>
           </div>
+        ) : (
+          /* Install step - now LAST, after store setup */
+          <div className="flex-1 flex flex-col items-center justify-center text-center space-y-6">
+            <div className={cn('w-24 h-24 rounded-3xl flex items-center justify-center',
+              isInstalled || installDone ? 'text-success bg-success/10' : 'text-primary bg-primary/10'
+            )}>
+              {isInstalled || installDone ? <CheckCircle2 className="w-12 h-12" /> : <Download className="w-12 h-12" />}
+            </div>
+            <div className="space-y-3">
+              <h2 className="text-2xl font-bold tracking-tight">
+                {isInstalled || installDone ? 'Sudah Terinstall! ✅' : 'Install di HP Kamu'}
+              </h2>
+              <p className="text-muted-foreground leading-relaxed max-w-xs mx-auto">
+                {isInstalled || installDone
+                  ? 'KasirGratisan sudah terinstall sebagai aplikasi. Kamu bisa buka langsung dari home screen!'
+                  : 'Jadikan KasirGratisan sebagai aplikasi di HP kamu. Akses lebih cepat langsung dari home screen, tanpa buka browser!'}
+              </p>
+            </div>
+            {!isInstalled && !installDone && (
+              canInstall ? (
+                <Button
+                  size="lg"
+                  className="h-12 px-8 text-base font-semibold"
+                  onClick={async () => {
+                    const ok = await install();
+                    if (ok) {
+                      setInstallDone(true);
+                      toast.success('Berhasil install KasirGratisan!');
+                    }
+                  }}
+                >
+                  <Download className="w-5 h-5 mr-2" />
+                  Install Sekarang
+                </Button>
+              ) : (
+                <div className="space-y-3 max-w-xs">
+                  <p className="text-sm text-muted-foreground">
+                    Untuk install, buka di browser <strong>Chrome</strong> lalu ketuk menu (⋮) → <strong>"Add to Home screen"</strong> atau <strong>"Install app"</strong>.
+                  </p>
+                  <p className="text-xs text-muted-foreground/70">
+                    Di Safari iOS: ketuk tombol Share (↑) → "Add to Home Screen"
+                  </p>
+                </div>
+              )
+            )}
+          </div>
         )}
       </div>
 
       {/* Navigation */}
       <div className="px-6 pt-4 flex items-center gap-3" style={{ paddingBottom: 'max(2rem, env(safe-area-inset-bottom, 2rem))' }}>
-        {step > 0 && (
+        {step > 0 && !isInstallStep && (
           <Button
             variant="outline"
             size="lg"
@@ -331,10 +337,19 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
           <Button
             size="lg"
             className="flex-1 h-12 text-base font-semibold"
-            onClick={handleFinish}
+            onClick={handleSaveStore}
             disabled={!storeName.trim() || saving}
           >
-            {saving ? 'Menyimpan...' : 'Mulai Jualan! 🚀'}
+            {saving ? 'Menyimpan...' : 'Simpan & Lanjut'}
+            <ChevronRight className="w-4 h-4 ml-1" />
+          </Button>
+        ) : isInstallStep ? (
+          <Button
+            size="lg"
+            className="flex-1 h-12 text-base font-semibold"
+            onClick={handleFinish}
+          >
+            {isInstalled || installDone ? 'Mulai Jualan! 🚀' : 'Lewati & Mulai Jualan 🚀'}
           </Button>
         ) : (
           <Button
@@ -342,7 +357,7 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
             className="flex-1 h-12 text-base font-semibold"
             onClick={() => setStep(s => s + 1)}
           >
-            {isInstallStep ? 'Lewati' : 'Lanjut'}
+            Lanjut
             <ChevronRight className="w-4 h-4 ml-1" />
           </Button>
         )}

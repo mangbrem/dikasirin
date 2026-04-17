@@ -1,7 +1,7 @@
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db, type Product, type Category, type Transaction, type TransactionItemRecord } from '@/lib/db';
 import { useState } from 'react';
-import { Search, Plus, Minus, ShoppingCart, X, Percent, Tag, CreditCard, Banknote, Check, ScanBarcode } from 'lucide-react';
+import { Search, Plus, Minus, ShoppingCart, X, Percent, Tag, CreditCard, Banknote, Check, ScanBarcode, Package as PackageIcon } from 'lucide-react';
 import Receipt from '@/components/Receipt';
 import BarcodeScanner from '@/components/BarcodeScanner';
 import { Card, CardContent } from '@/components/ui/card';
@@ -213,10 +213,20 @@ const [receiptOpen, setReceiptOpen] = useState(false);
           <div className="grid grid-cols-2 gap-2">
             {filtered.map(p => (
               <Card key={p.id} className="border-0 shadow-sm cursor-pointer hover:shadow-md transition-shadow active:scale-[0.98]" onClick={() => addToCart(p)}>
-                <CardContent className="p-3">
-                  <h3 className="text-sm font-semibold truncate">{p.name}</h3>
-                  <p className="text-base font-bold text-primary mt-1">Rp {p.price.toLocaleString('id-ID')}</p>
-                  <p className="text-[10px] text-muted-foreground mt-0.5">Stok: {p.stock} {p.unit}</p>
+                <CardContent className="p-0">
+                  {/* Product photo */}
+                  <div className="w-full aspect-square bg-muted rounded-t-lg overflow-hidden flex items-center justify-center">
+                    {p.photo ? (
+                      <img src={p.photo} alt={p.name} className="w-full h-full object-cover" />
+                    ) : (
+                      <PackageIcon className="w-8 h-8 text-muted-foreground/30" />
+                    )}
+                  </div>
+                  <div className="p-2.5">
+                    <h3 className="text-xs font-semibold truncate">{p.name}</h3>
+                    <p className="text-sm font-bold text-primary mt-0.5">Rp {p.price.toLocaleString('id-ID')}</p>
+                    <p className="text-[10px] text-muted-foreground mt-0.5">Stok: {p.stock} {p.unit}</p>
+                  </div>
                 </CardContent>
               </Card>
             ))}

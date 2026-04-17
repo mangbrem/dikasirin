@@ -48,14 +48,14 @@ export default function SupplierPage() {
       await db.suppliers.update(editSupplier.id, data);
       toast.success('Supplier diperbarui');
     } else {
-      await db.suppliers.add({ ...data, createdAt: new Date(), isDeleted: false, deletedAt: null });
+      await db.suppliers.add({ ...data, createdAt: new Date(), isDeleted: 0, deletedAt: null });
       toast.success('Supplier ditambahkan');
     }
     setDialogOpen(false);
   };
 
   const handleDelete = async () => {
-    if (deleteId) { await db.suppliers.update(deleteId, { isDeleted: true, deletedAt: new Date() }); setDeleteId(null); toast.success('Supplier dihapus'); }
+    if (deleteId) { await db.suppliers.update(deleteId, { isDeleted: 1, deletedAt: new Date() }); setDeleteId(null); toast.success('Supplier dihapus'); }
   };
 
   return (

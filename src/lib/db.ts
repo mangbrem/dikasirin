@@ -8,7 +8,7 @@ export interface Category {
   color: string;
   icon: string;
   createdAt: Date;
-  isDeleted: boolean;
+  isDeleted: number; // 0 = active, 1 = deleted (IndexedDB can't index booleans)
   deletedAt: Date | null;
 }
 
@@ -25,7 +25,7 @@ export interface Product {
   barcode?: string;
   createdAt: Date;
   updatedAt: Date;
-  isDeleted: boolean;
+  isDeleted: number; // 0 = active, 1 = deleted
   deletedAt: Date | null;
 }
 
@@ -36,7 +36,7 @@ export interface Supplier {
   address: string;
   notes: string;
   createdAt: Date;
-  isDeleted: boolean;
+  isDeleted: number; // 0 = active, 1 = deleted
   deletedAt: Date | null;
 }
 
@@ -165,19 +165,19 @@ class PosDatabase extends Dexie {
       // CR-2: Set soft delete defaults on existing records
       const catTable = tx.table('categories');
       await catTable.toCollection().modify((cat: any) => {
-        cat.isDeleted = false;
+        cat.isDeleted = 0;
         cat.deletedAt = null;
       });
 
       const prodTable = tx.table('products');
       await prodTable.toCollection().modify((prod: any) => {
-        prod.isDeleted = false;
+        prod.isDeleted = 0;
         prod.deletedAt = null;
       });
 
       const supTable = tx.table('suppliers');
       await supTable.toCollection().modify((sup: any) => {
-        sup.isDeleted = false;
+        sup.isDeleted = 0;
         sup.deletedAt = null;
       });
 
@@ -224,9 +224,9 @@ export async function seedDefaultData() {
   const categoryCount = await db.categories.count();
   if (categoryCount === 0) {
     await db.categories.bulkAdd([
-      { name: 'Makanan', color: '#FF6B35', icon: '🍕', createdAt: new Date(), isDeleted: false, deletedAt: null },
-      { name: 'Minuman', color: '#4ECDC4', icon: '🥤', createdAt: new Date(), isDeleted: false, deletedAt: null },
-      { name: 'Lainnya', color: '#95A5A6', icon: '📦', createdAt: new Date(), isDeleted: false, deletedAt: null },
+      { name: 'Makanan', color: '#FF6B35', icon: '🍕', createdAt: new Date(), isDeleted: 0, deletedAt: null },
+      { name: 'Minuman', color: '#4ECDC4', icon: '🥤', createdAt: new Date(), isDeleted: 0, deletedAt: null },
+      { name: 'Lainnya', color: '#95A5A6', icon: '📦', createdAt: new Date(), isDeleted: 0, deletedAt: null },
     ]);
   }
 

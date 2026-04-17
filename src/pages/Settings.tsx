@@ -79,11 +79,11 @@ export default function Pengaturan() {
   const saveCat = async () => {
     if (!catName.trim()) return;
     if (catEditId) await db.categories.update(catEditId, { name: catName.trim(), icon: catIcon, color: catColor });
-    else await db.categories.add({ name: catName.trim(), icon: catIcon, color: catColor, createdAt: new Date(), isDeleted: false, deletedAt: null });
+    else await db.categories.add({ name: catName.trim(), icon: catIcon, color: catColor, createdAt: new Date(), isDeleted: 0, deletedAt: null });
     setCatDialog(false);
     toast.success('Kategori disimpan');
   };
-  const deleteCat = async (id: number) => { await db.categories.update(id, { isDeleted: true, deletedAt: new Date() }); toast.success('Dihapus'); };
+  const deleteCat = async (id: number) => { await db.categories.update(id, { isDeleted: 1, deletedAt: new Date() }); toast.success('Dihapus'); };
 
   const handleImport = () => {
     const input = document.createElement('input');

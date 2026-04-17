@@ -1,21 +1,16 @@
 import { useLiveQuery } from 'dexie-react-hooks';
-import { db, seedDefaultData, type TransactionItemRecord } from '@/lib/db';
-import { useEffect, useState } from 'react';
+import { db, type TransactionItemRecord } from '@/lib/db';
+import { useState } from 'react';
 import { ShoppingCart, Package, BarChart3, TrendingUp, AlertTriangle, Receipt, ChevronRight } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Link } from 'react-router-dom';
 import { format } from 'date-fns';
 import { id } from 'date-fns/locale';
 import { Button } from '@/components/ui/button';
-import Onboarding from '@/components/Onboarding';
 import BackupReminder, { shouldShowBackupReminder, exportBackupData } from '@/components/BackupReminder';
 
 export default function Dashboard() {
   const [backupDismissed, setBackupDismissed] = useState(false);
-
-  useEffect(() => {
-    seedDefaultData();
-  }, []);
 
   const storeSettings = useLiveQuery(() => db.storeSettings.toCollection().first());
 
@@ -26,7 +21,7 @@ export default function Dashboard() {
     return db.transactions.where('date').aboveOrEqual(today).toArray();
   }, []);
 
-  const lowStockProducts = useLiveQuery(() => db.products.filter(p => !p.isDeleted && p.stock <= 5).toArray());
+  const lowStockProducts = useLiveQuery(() => db.products.filter(p => p.isDeleted === 0 && p.stock <= 5).toArray());
 
   const recentTransactions = useLiveQuery(() =>
     db.transactions.orderBy('date').reverse().limit(5).toArray()
@@ -49,13 +44,6 @@ export default function Dashboard() {
 
   // Show onboarding if not done yet
   if (storeSettings === undefined) return null; // loading
-  if (storeSettings && !storeSettings.onboardingDone) {
-    return (
-      <Onboarding onComplete={() => {
-        // Dexie live query will auto-refresh
-      }} />
-    );
-  }
 
   const totalSales = todayTransactions?.reduce((sum, t) => sum + t.total, 0) ?? 0;
   const totalProfit = todayTransactions?.reduce((sum, t) => sum + t.profit, 0) ?? 0;

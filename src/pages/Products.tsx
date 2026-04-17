@@ -1,7 +1,7 @@
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db, type Product, type Category } from '@/lib/db';
-import { useState } from 'react';
-import { Plus, Search, Edit2, Trash2, Package as PackageIcon, X } from 'lucide-react';
+import { useState, useRef } from 'react';
+import { Plus, Search, Edit2, Trash2, Package as PackageIcon, Camera, X } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,6 +11,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
+import { compressImage } from '@/lib/image-utils';
+import { toast } from 'sonner';
 
 export default function Produk() {
   const [search, setSearch] = useState('');
@@ -28,6 +30,8 @@ export default function Produk() {
   const [stock, setStock] = useState('');
   const [unit, setUnit] = useState('pcs');
   const [barcode, setBarcode] = useState('');
+  const [photo, setPhoto] = useState<string | undefined>(undefined);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const products = useLiveQuery(() => db.products.where('isDeleted').equals(0).toArray());
   const categories = useLiveQuery(() => db.categories.where('isDeleted').equals(0).toArray());
@@ -43,14 +47,31 @@ export default function Produk() {
 
   const openAdd = () => {
     setEditProduct(null);
-    setName(''); setSku(''); setCategoryId(categories?.[0]?.id?.toString() ?? ''); setPrice(''); setHpp(''); setStock(''); setUnit('pcs'); setBarcode('');
+    setName(''); setSku(''); setCategoryId(categories?.[0]?.id?.toString() ?? ''); setPrice(''); setHpp(''); setStock(''); setUnit('pcs'); setBarcode(''); setPhoto(undefined);
     setDialogOpen(true);
   };
 
   const openEdit = (p: Product) => {
     setEditProduct(p);
-    setName(p.name); setSku(p.sku); setCategoryId(p.categoryId.toString()); setPrice(p.price.toString()); setHpp(p.hpp.toString()); setStock(p.stock.toString()); setUnit(p.unit); setBarcode(p.barcode ?? '');
+    setName(p.name); setSku(p.sku); setCategoryId(p.categoryId.toString()); setPrice(p.price.toString()); setHpp(p.hpp.toString()); setStock(p.stock.toString()); setUnit(p.unit); setBarcode(p.barcode ?? ''); setPhoto(p.photo);
     setDialogOpen(true);
+  };
+
+  const handlePhotoSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      toast.error('File harus berupa gambar');
+      return;
+    }
+    try {
+      const compressed = await compressImage(file);
+      setPhoto(compressed);
+    } catch {
+      toast.error('Gagal memproses gambar');
+    }
+    // Reset input so same file can be selected again
+    if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
   const handleSave = async () => {
@@ -64,20 +85,21 @@ export default function Produk() {
       stock: Number(stock) || 0,
       unit: unit.trim() || 'pcs',
       barcode: barcode.trim() || undefined,
+      photo: photo || undefined,
       updatedAt: new Date(),
     };
 
     if (editProduct?.id) {
       await db.products.update(editProduct.id, data);
     } else {
-      await db.products.add({ ...data, createdAt: new Date(), isDeleted: false, deletedAt: null } as Product);
+      await db.products.add({ ...data, createdAt: new Date(), isDeleted: 0, deletedAt: null } as Product);
     }
     setDialogOpen(false);
   };
 
   const handleDelete = async () => {
     if (deleteId) {
-      await db.products.update(deleteId, { isDeleted: true, deletedAt: new Date() });
+      await db.products.update(deleteId, { isDeleted: 1, deletedAt: new Date() });
       setDeleteId(null);
     }
   };
@@ -137,7 +159,15 @@ export default function Produk() {
           {filtered.map(p => (
             <Card key={p.id} className="border-0 shadow-sm">
               <CardContent className="p-3">
-                <div className="flex items-start justify-between gap-2">
+                <div className="flex items-start gap-3">
+                  {/* Product thumbnail */}
+                  <div className="w-12 h-12 rounded-lg bg-muted flex items-center justify-center shrink-0 overflow-hidden">
+                    {p.photo ? (
+                      <img src={p.photo} alt={p.name} className="w-full h-full object-cover" />
+                    ) : (
+                      <PackageIcon className="w-5 h-5 text-muted-foreground/40" />
+                    )}
+                  </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
                       <h3 className="text-sm font-semibold truncate">{p.name}</h3>
@@ -178,6 +208,55 @@ export default function Produk() {
             <DialogTitle>{editProduct ? 'Edit Produk' : 'Tambah Produk'}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 mt-2">
+            {/* Photo picker */}
+            <div className="space-y-1.5">
+              <Label>Foto Produk</Label>
+              <div className="flex items-center gap-3">
+                <div
+                  className="w-20 h-20 rounded-xl bg-muted border-2 border-dashed border-border flex items-center justify-center overflow-hidden cursor-pointer hover:border-primary/50 transition-colors"
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  {photo ? (
+                    <img src={photo} alt="Preview" className="w-full h-full object-cover" />
+                  ) : (
+                    <Camera className="w-6 h-6 text-muted-foreground/50" />
+                  )}
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="h-8 text-xs gap-1.5"
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    <Camera className="w-3.5 h-3.5" />
+                    {photo ? 'Ganti Foto' : 'Pilih Foto'}
+                  </Button>
+                  {photo && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 text-xs text-destructive gap-1.5"
+                      onClick={() => setPhoto(undefined)}
+                    >
+                      <X className="w-3.5 h-3.5" />
+                      Hapus Foto
+                    </Button>
+                  )}
+                </div>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  className="hidden"
+                  onChange={handlePhotoSelect}
+                />
+              </div>
+            </div>
+
             <div className="space-y-1.5">
               <Label>Nama Produk *</Label>
               <Input value={name} onChange={e => setName(e.target.value)} placeholder="Contoh: Nasi Goreng" className="h-11" />

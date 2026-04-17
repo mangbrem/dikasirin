@@ -1,50 +1,50 @@
 /**
- * Compress and resize an image file to a base64 data URL.
- * - Resizes proportionally so the longest side is max 800px
- * - Compresses as JPEG, reducing quality until ≤ maxSizeKB
- *
- * IMPORTANT: Every product photo upload MUST go through this function.
+ * Compress and resize an image file to a base64 JPEG string.
+ * Target: max 200x200px, JPEG quality 0.7 (~10-20KB per image)
  */
-export async function compressImage(file: File, maxSizeKB = 200): Promise<string> {
-  const img = await loadImage(file);
-
-  const maxDim = 800;
-  let { width, height } = img;
-  if (width > maxDim || height > maxDim) {
-    const ratio = Math.min(maxDim / width, maxDim / height);
-    width = Math.round(width * ratio);
-    height = Math.round(height * ratio);
-  }
-
-  const canvas = document.createElement('canvas');
-  canvas.width = width;
-  canvas.height = height;
-  const ctx = canvas.getContext('2d')!;
-  ctx.drawImage(img, 0, 0, width, height);
-
-  // Compress iteratively
-  let quality = 0.8;
-  let dataUrl = canvas.toDataURL('image/jpeg', quality);
-
-  while (getBase64SizeKB(dataUrl) > maxSizeKB && quality > 0.1) {
-    quality -= 0.1;
-    dataUrl = canvas.toDataURL('image/jpeg', quality);
-  }
-
-  return dataUrl;
-}
-
-function loadImage(file: File): Promise<HTMLImageElement> {
+export function compressImage(
+  file: File,
+  maxSize = 200,
+  quality = 0.7
+): Promise<string> {
   return new Promise((resolve, reject) => {
-    const img = new Image();
-    img.onload = () => resolve(img);
-    img.onerror = reject;
-    img.src = URL.createObjectURL(file);
-  });
-}
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        let { width, height } = img;
 
-function getBase64SizeKB(dataUrl: string): number {
-  // base64 string after the comma
-  const base64 = dataUrl.split(',')[1] ?? '';
-  return (base64.length * 3) / 4 / 1024;
+        // Scale down proportionally
+        if (width > height) {
+          if (width > maxSize) {
+            height = Math.round((height * maxSize) / width);
+            width = maxSize;
+          }
+        } else {
+          if (height > maxSize) {
+            width = Math.round((width * maxSize) / height);
+            height = maxSize;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          reject(new Error('Canvas context not available'));
+          return;
+        }
+
+        ctx.drawImage(img, 0, 0, width, height);
+        const base64 = canvas.toDataURL('image/jpeg', quality);
+        resolve(base64);
+      };
+      img.onerror = () => reject(new Error('Failed to load image'));
+      img.src = e.target?.result as string;
+    };
+    reader.onerror = () => reject(new Error('Failed to read file'));
+    reader.readAsDataURL(file);
+  });
 }
