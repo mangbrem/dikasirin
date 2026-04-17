@@ -43,7 +43,7 @@ const tutorialSlides = [
 ];
 
 export default function Onboarding({ onComplete }: OnboardingProps) {
-  // Steps: install (0), tutorial slides (1-4), store setup (5)
+  // Steps: tutorial slides (0-3), install (4), store setup (5)
   const [step, setStep] = useState(0);
   const [storeName, setStoreName] = useState('');
   const [address, setAddress] = useState('');
@@ -54,11 +54,11 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
   const [installDone, setInstallDone] = useState(false);
   const { canInstall, isInstalled, install } = usePWAInstall();
 
-  const totalSteps = 1 + tutorialSlides.length + 1; // install + tutorials + store setup
-  const isInstallStep = step === 0;
-  const isTutorialStep = step >= 1 && step <= tutorialSlides.length;
+  const totalSteps = tutorialSlides.length + 2; // tutorials + install + store setup
+  const isTutorialStep = step < tutorialSlides.length;
+  const isInstallStep = step === tutorialSlides.length;
   const isStoreStep = step === tutorialSlides.length + 1;
-  const tutorialIndex = step - 1; // 0-based index into tutorialSlides
+  const tutorialIndex = step;
 
   const seedDummyData = async () => {
     const now = new Date();
@@ -169,7 +169,26 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
         </div>
 
       <div className="flex-1 flex flex-col px-4">
-        {isInstallStep ? (
+        {isTutorialStep ? (
+          /* Tutorial slides */
+          <div className="flex-1 flex flex-col items-center justify-center text-center space-y-6">
+            {(() => {
+              const slide = tutorialSlides[tutorialIndex];
+              const Icon = slide.icon;
+              return (
+                <>
+                  <div className={cn('w-24 h-24 rounded-3xl flex items-center justify-center', slide.color)}>
+                    <Icon className="w-12 h-12" />
+                  </div>
+                  <div className="space-y-3">
+                    <h2 className="text-2xl font-bold tracking-tight">{slide.title}</h2>
+                    <p className="text-muted-foreground leading-relaxed max-w-xs mx-auto">{slide.description}</p>
+                  </div>
+                </>
+              );
+            })()}
+          </div>
+        ) : isInstallStep ? (
           /* Install step - FIRST, before anything else */
           <div className="flex-1 flex flex-col items-center justify-center text-center space-y-6">
             <div className={cn('w-24 h-24 rounded-3xl flex items-center justify-center',
@@ -208,7 +227,7 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
                     variant="ghost"
                     size="lg"
                     className="w-full h-12 text-base text-muted-foreground"
-                    onClick={() => setStep(1)}
+                    onClick={() => setStep(s => s + 1)}
                   >
                     <Globe className="w-5 h-5 mr-2" />
                     Lanjut di Browser
@@ -225,25 +244,6 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
                 </div>
               )
             )}
-          </div>
-        ) : isTutorialStep ? (
-          /* Tutorial slides */
-          <div className="flex-1 flex flex-col items-center justify-center text-center space-y-6">
-            {(() => {
-              const slide = tutorialSlides[tutorialIndex];
-              const Icon = slide.icon;
-              return (
-                <>
-                  <div className={cn('w-24 h-24 rounded-3xl flex items-center justify-center', slide.color)}>
-                    <Icon className="w-12 h-12" />
-                  </div>
-                  <div className="space-y-3">
-                    <h2 className="text-2xl font-bold tracking-tight">{slide.title}</h2>
-                    <p className="text-muted-foreground leading-relaxed max-w-xs mx-auto">{slide.description}</p>
-                  </div>
-                </>
-              );
-            })()}
           </div>
         ) : (
           /* Store setup - LAST */
@@ -338,52 +338,29 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
 
       {/* Navigation */}
       <div className="px-4 pt-4 flex items-center gap-3" style={{ paddingBottom: 'max(2rem, env(safe-area-inset-bottom, 2rem))' }}>
+        {step > 0 && !isInstallStep && (
+          <Button
+            variant="outline"
+            size="lg"
+            onClick={() => setStep(s => s - 1)}
+            className="h-12"
+          >
+            <ChevronLeft className="w-4 h-4" />
+          </Button>
+        )}
         {isInstallStep ? (
-          /* Install step: buttons are inline above, only show skip if no native prompt */
           <>
             {(isInstalled || installDone) && (
               <Button
                 size="lg"
                 className="flex-1 h-12 text-base font-semibold"
-                onClick={() => setStep(1)}
+                onClick={() => setStep(s => s + 1)}
               >
                 Lanjut
                 <ChevronRight className="w-4 h-4 ml-1" />
               </Button>
             )}
             {!canInstall && !isInstalled && !installDone && (
-              <Button
-                size="lg"
-                className="flex-1 h-12 text-base font-semibold"
-                onClick={() => setStep(1)}
-              >
-                Lanjut
-                <ChevronRight className="w-4 h-4 ml-1" />
-              </Button>
-            )}
-          </>
-        ) : (
-          <>
-            {step > 1 && (
-              <Button
-                variant="outline"
-                size="lg"
-                onClick={() => setStep(s => s - 1)}
-                className="h-12"
-              >
-                <ChevronLeft className="w-4 h-4" />
-              </Button>
-            )}
-            {isStoreStep ? (
-              <Button
-                size="lg"
-                className="flex-1 h-12 text-base font-semibold"
-                onClick={handleFinish}
-                disabled={!storeName.trim() || saving}
-              >
-                {saving ? 'Menyimpan...' : 'Mulai Jualan! 🚀'}
-              </Button>
-            ) : (
               <Button
                 size="lg"
                 className="flex-1 h-12 text-base font-semibold"
@@ -394,6 +371,24 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
               </Button>
             )}
           </>
+        ) : isStoreStep ? (
+          <Button
+            size="lg"
+            className="flex-1 h-12 text-base font-semibold"
+            onClick={handleFinish}
+            disabled={!storeName.trim() || saving}
+          >
+            {saving ? 'Menyimpan...' : 'Mulai Jualan! 🚀'}
+          </Button>
+        ) : (
+          <Button
+            size="lg"
+            className="flex-1 h-12 text-base font-semibold"
+            onClick={() => setStep(s => s + 1)}
+          >
+            Lanjut
+            <ChevronRight className="w-4 h-4 ml-1" />
+          </Button>
         )}
       </div>
       </div>
