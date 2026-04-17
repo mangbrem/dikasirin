@@ -130,7 +130,6 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
           storeName: storeName.trim(),
           address: address.trim(),
           phone: phone.trim(),
-          onboardingDone: true,
           themeColor,
         });
       } else {
@@ -139,7 +138,7 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
           address: address.trim(),
           phone: phone.trim(),
           receiptFooter: 'Terima kasih atas kunjungan Anda!',
-          onboardingDone: true,
+          onboardingDone: false,
           lastBackupAt: null,
           themeColor,
         });
@@ -158,7 +157,11 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
     }
   };
 
-  const handleFinish = () => {
+  const handleFinish = async () => {
+    const existing = await db.storeSettings.toCollection().first();
+    if (existing?.id) {
+      await db.storeSettings.update(existing.id, { onboardingDone: true });
+    }
     onComplete();
   };
 
