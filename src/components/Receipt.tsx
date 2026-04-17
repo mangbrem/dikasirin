@@ -72,8 +72,8 @@ export default function Receipt({ open, onClose, transaction, items, storeSettin
         );
         window.open(`https://wa.me/?text=${text}`, '_blank');
       }
-    } catch (err: any) {
-      if (err?.name !== 'AbortError') {
+    } catch (err: unknown) {
+      if (err instanceof Error && err.name !== 'AbortError') {
         toast.error('Gagal membagikan struk');
       }
     }
@@ -87,7 +87,8 @@ export default function Receipt({ open, onClose, transaction, items, storeSettin
 
     try {
       toast.info('Mencari printer Bluetooth...');
-      const device = await (navigator as any).bluetooth.requestDevice({
+      // @ts-expect-error Web Bluetooth API is not fully typed in TypeScript
+      const device = await navigator.bluetooth.requestDevice({
         filters: [{ services: ['000018f0-0000-1000-8000-00805f9b34fb'] }],
         optionalServices: ['000018f0-0000-1000-8000-00805f9b34fb'],
       });
@@ -137,8 +138,8 @@ export default function Receipt({ open, onClose, transaction, items, storeSettin
 
       toast.success('Struk berhasil dicetak!');
       await server.disconnect();
-    } catch (err: any) {
-      if (err?.name !== 'NotFoundError') {
+    } catch (err: unknown) {
+      if (err instanceof Error && err.name !== 'NotFoundError') {
         toast.error('Gagal mencetak. Pastikan printer Bluetooth menyala.');
       }
     }

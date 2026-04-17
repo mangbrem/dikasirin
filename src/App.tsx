@@ -15,6 +15,7 @@ import SupplierPage from "./pages/Supplier";
 import StockInPage from "./pages/StockIn";
 import StockOutPage from "./pages/StockOut";
 import TransactionHistory from "./pages/TransactionHistory";
+import StockReport from "./pages/StockReport";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -41,6 +42,7 @@ const App = () => {
               <Route path="/stock-in" element={<StockInPage />} />
               <Route path="/stock-out" element={<StockOutPage />} />
               <Route path="/history" element={<TransactionHistory />} />
+              <Route path="/stock-report" element={<StockReport />} />
             </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>

@@ -1,8 +1,9 @@
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db, type Product, type Category, type Transaction, type TransactionItemRecord } from '@/lib/db';
 import { useState } from 'react';
-import { Search, Plus, Minus, ShoppingCart, X, Percent, Tag, CreditCard, Banknote, Check } from 'lucide-react';
+import { Search, Plus, Minus, ShoppingCart, X, Percent, Tag, CreditCard, Banknote, Check, ScanBarcode } from 'lucide-react';
 import Receipt from '@/components/Receipt';
+import BarcodeScanner from '@/components/BarcodeScanner';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -33,10 +34,11 @@ export default function Kasir() {
   const [tempDiscountValue, setTempDiscountValue] = useState('');
   const [paymentMethodId, setPaymentMethodId] = useState<string>('');
   const [paymentAmount, setPaymentAmount] = useState('');
-  const [receiptOpen, setReceiptOpen] = useState(false);
+const [receiptOpen, setReceiptOpen] = useState(false);
   const [lastTransaction, setLastTransaction] = useState<Transaction | null>(null);
   const [lastTxItems, setLastTxItems] = useState<TransactionItemRecord[]>([]);
   const [remarks, setRemarks] = useState('');
+  const [scannerOpen, setScannerOpen] = useState(false);
 
   const products = useLiveQuery(() => db.products.where('isDeleted').equals(0).toArray());
   const categories = useLiveQuery(() => db.categories.where('isDeleted').equals(0).toArray());
@@ -149,6 +151,21 @@ export default function Kasir() {
 
   const cartCount = cart.reduce((s, c) => s + c.qty, 0);
 
+  const handleScan = (barcode: string) => {
+    setScannerOpen(false);
+    const product = products?.find(p => p.barcode === barcode);
+    if (product) {
+      if (product.stock <= 0) {
+        toast.error(`Stok ${product.name} habis`);
+        return;
+      }
+      addToCart(product);
+      toast.success(`Ditambahkan: ${product.name}`);
+    } else {
+      toast.error('Produk tidak ditemukan');
+    }
+  };
+
   return (
     <div className="px-4 pt-6 pb-4 flex flex-col h-[calc(100vh-4rem)]">
       {/* Header */}
@@ -159,12 +176,15 @@ export default function Kasir() {
         </h1>
       </div>
 
-      {/* Search */}
+{/* Search */}
       <div className="flex gap-2 mb-3">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input placeholder="Cari produk..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9 h-10" />
         </div>
+        <Button variant="outline" size="icon" className="h-10 w-10 shrink-0" onClick={() => setScannerOpen(true)}>
+          <ScanBarcode className="w-5 h-5" />
+        </Button>
       </div>
 
       {/* Category chips */}
@@ -430,7 +450,7 @@ export default function Kasir() {
         </DialogContent>
       </Dialog>
 
-      {/* Receipt Dialog */}
+{/* Receipt Dialog */}
       {lastTransaction && (
         <Receipt
           open={receiptOpen}
@@ -441,6 +461,13 @@ export default function Kasir() {
           paymentMethodName={paymentMethods?.find(pm => pm.id === lastTransaction.paymentMethodId)?.name || 'Tunai'}
         />
       )}
+
+      {/* Barcode Scanner */}
+      <BarcodeScanner
+        open={scannerOpen}
+        onClose={() => setScannerOpen(false)}
+        onScan={handleScan}
+      />
     </div>
   );
 }

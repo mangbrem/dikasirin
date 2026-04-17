@@ -1,7 +1,7 @@
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db, type PaymentMethod, type Category } from '@/lib/db';
 import { useState, useEffect } from 'react';
-import { Settings, Store, CreditCard, Tag, Download, Upload, Plus, Trash2, Edit2, Info, Truck, ArrowDownToLine, ArrowUpFromLine, ChevronRight, Receipt, Palette, HardDrive } from 'lucide-react';
+import { Settings, Store, CreditCard, Tag, Download, Upload, Plus, Trash2, Edit2, Info, Truck, ArrowDownToLine, ArrowUpFromLine, ChevronRight, Receipt, Palette, HardDrive, Package } from 'lucide-react';
 import ThemeColorPicker from '@/components/ThemeColorPicker';
 import { setThemeColor } from '@/hooks/use-theme-color';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -252,10 +252,19 @@ export default function Pengaturan() {
           </Card>
         </Link>
         <Link to="/stock-out">
-          <Card className="border-0 shadow-sm cursor-pointer hover:shadow-md transition-shadow">
+          <Card className="border-0 shadow-sm cursor-pointer hover:shadow-md transition-shadow mb-2">
             <CardContent className="p-3 flex items-center gap-3">
               <div className="w-9 h-9 rounded-lg bg-destructive/10 text-destructive flex items-center justify-center"><ArrowUpFromLine className="w-4 h-4" /></div>
               <div className="flex-1"><p className="text-sm font-semibold">Stock Out</p><p className="text-[10px] text-muted-foreground">Catat barang keluar non-penjualan</p></div>
+              <ChevronRight className="w-4 h-4 text-muted-foreground" />
+            </CardContent>
+          </Card>
+        </Link>
+        <Link to="/stock-report">
+          <Card className="border-0 shadow-sm cursor-pointer hover:shadow-md transition-shadow">
+            <CardContent className="p-3 flex items-center gap-3">
+              <div className="w-9 h-9 rounded-lg bg-primary/10 text-primary flex items-center justify-center"><Package className="w-4 h-4" /></div>
+              <div className="flex-1"><p className="text-sm font-semibold">Laporan Stok</p><p className="text-[10px] text-muted-foreground">Lihat pergerakan stok per periode</p></div>
               <ChevronRight className="w-4 h-4 text-muted-foreground" />
             </CardContent>
           </Card>
