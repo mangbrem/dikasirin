@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Store, MapPin, Phone, ChevronRight, ChevronLeft, ShoppingCart, Package, BarChart3, Shield, Database, Palette, Download, CheckCircle2 } from 'lucide-react';
+import { Store, MapPin, Phone, ChevronRight, ChevronLeft, ShoppingCart, Package, BarChart3, Shield, Database, Palette, Download, CheckCircle2, Globe } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -43,7 +43,7 @@ const tutorialSlides = [
 ];
 
 export default function Onboarding({ onComplete }: OnboardingProps) {
-  // Steps: tutorial slides (0-3), store setup (4), install (5)
+  // Steps: install (0), tutorial slides (1-4), store setup (5)
   const [step, setStep] = useState(0);
   const [storeName, setStoreName] = useState('');
   const [address, setAddress] = useState('');
@@ -52,12 +52,13 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
   const [saving, setSaving] = useState(false);
   const [themeColor, setThemeColorState] = useState('25');
   const [installDone, setInstallDone] = useState(false);
-  const [storeSetupDone, setStoreSetupDone] = useState(false);
   const { canInstall, isInstalled, install } = usePWAInstall();
 
-  const totalSteps = tutorialSlides.length + 2; // tutorials + store setup + install
-  const isStoreStep = step === tutorialSlides.length;
-  const isInstallStep = step === tutorialSlides.length + 1;
+  const totalSteps = 1 + tutorialSlides.length + 1; // install + tutorials + store setup
+  const isInstallStep = step === 0;
+  const isTutorialStep = step >= 1 && step <= tutorialSlides.length;
+  const isStoreStep = step === tutorialSlides.length + 1;
+  const tutorialIndex = step - 1; // 0-based index into tutorialSlides
 
   const seedDummyData = async () => {
     const now = new Date();
@@ -85,7 +86,6 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
 
     const discNull: 'percentage' | 'nominal' | null = null;
 
-    // Transaction 1: Nasi Goreng Spesial x2 + Es Teh Manis x2
     const tx1Id = await db.transactions.add({
       subtotal: 40000, discountType: discNull, discountValue: 0, discountAmount: 0, total: 40000,
       paymentMethodId: 1, paymentAmount: 50000, change: 10000, profit: 21000,
@@ -96,7 +96,6 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
       { transactionId: tx1Id as number, productId: 6, productName: 'Es Teh Manis', quantity: 2, price: 5000, hpp: 1500, discountType: discNull, discountValue: 0, discountAmount: 0, subtotal: 10000 },
     ]);
 
-    // Transaction 2: Ayam Bakar x1 + Kopi Susu x1
     const tx2Id = await db.transactions.add({
       subtotal: 30000, discountType: discNull, discountValue: 0, discountAmount: 0, total: 30000,
       paymentMethodId: 3, paymentAmount: 30000, change: 0, profit: 14000,
@@ -107,7 +106,6 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
       { transactionId: tx2Id as number, productId: 8, productName: 'Kopi Susu', quantity: 1, price: 10000, hpp: 4000, discountType: discNull, discountValue: 0, discountAmount: 0, subtotal: 10000 },
     ]);
 
-    // Transaction 3: Nasi Goreng x1 + Sate Ayam x1 + Es Jeruk x1
     const tx3Id = await db.transactions.add({
       subtotal: 40000, discountType: discNull, discountValue: 0, discountAmount: 0, total: 40000,
       paymentMethodId: 1, paymentAmount: 50000, change: 10000, profit: 18500,
@@ -120,7 +118,7 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
     ]);
   };
 
-  const handleSaveStore = async () => {
+  const handleFinish = async () => {
     if (!storeName.trim()) return;
     setSaving(true);
     try {
@@ -130,6 +128,7 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
           storeName: storeName.trim(),
           address: address.trim(),
           phone: phone.trim(),
+          onboardingDone: true,
           themeColor,
         });
       } else {
@@ -138,7 +137,7 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
           address: address.trim(),
           phone: phone.trim(),
           receiptFooter: 'Terima kasih atas kunjungan Anda!',
-          onboardingDone: false,
+          onboardingDone: true,
           lastBackupAt: null,
           themeColor,
         });
@@ -146,23 +145,12 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
 
       if (loadDummy) {
         await seedDummyData();
-        toast.success('Data contoh berhasil dimuat!');
       }
 
-      setStoreSetupDone(true);
-      // Move to install step
-      setStep(s => s + 1);
+      onComplete();
     } finally {
       setSaving(false);
     }
-  };
-
-  const handleFinish = async () => {
-    const existing = await db.storeSettings.toCollection().first();
-    if (existing?.id) {
-      await db.storeSettings.update(existing.id, { onboardingDone: true });
-    }
-    onComplete();
   };
 
   return (
@@ -181,11 +169,68 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
         </div>
 
       <div className="flex-1 flex flex-col px-4">
-        {!isStoreStep && !isInstallStep ? (
+        {isInstallStep ? (
+          /* Install step - FIRST, before anything else */
+          <div className="flex-1 flex flex-col items-center justify-center text-center space-y-6">
+            <div className={cn('w-24 h-24 rounded-3xl flex items-center justify-center',
+              isInstalled || installDone ? 'text-success bg-success/10' : 'text-primary bg-primary/10'
+            )}>
+              {isInstalled || installDone ? <CheckCircle2 className="w-12 h-12" /> : <Download className="w-12 h-12" />}
+            </div>
+            <div className="space-y-3">
+              <h2 className="text-2xl font-bold tracking-tight">
+                {isInstalled || installDone ? 'Sudah Terinstall! ✅' : 'Install sebagai Aplikasi'}
+              </h2>
+              <p className="text-muted-foreground leading-relaxed max-w-xs mx-auto">
+                {isInstalled || installDone
+                  ? 'KasirGratisan sudah terinstall. Kamu bisa buka langsung dari home screen!'
+                  : 'Install KasirGratisan di HP kamu supaya bisa diakses langsung dari home screen, tanpa buka browser.'}
+              </p>
+            </div>
+            {!isInstalled && !installDone && (
+              canInstall ? (
+                <div className="space-y-3 w-full max-w-xs">
+                  <Button
+                    size="lg"
+                    className="w-full h-12 text-base font-semibold"
+                    onClick={async () => {
+                      const ok = await install();
+                      if (ok) {
+                        setInstallDone(true);
+                        toast.success('Berhasil install KasirGratisan!');
+                      }
+                    }}
+                  >
+                    <Download className="w-5 h-5 mr-2" />
+                    Install sebagai Aplikasi
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="lg"
+                    className="w-full h-12 text-base text-muted-foreground"
+                    onClick={() => setStep(1)}
+                  >
+                    <Globe className="w-5 h-5 mr-2" />
+                    Lanjut di Browser
+                  </Button>
+                </div>
+              ) : (
+                <div className="space-y-3 max-w-xs">
+                  <p className="text-sm text-muted-foreground">
+                    Untuk install, buka di browser <strong>Chrome</strong> lalu ketuk menu (⋮) → <strong>"Add to Home screen"</strong> atau <strong>"Install app"</strong>.
+                  </p>
+                  <p className="text-xs text-muted-foreground/70">
+                    Di Safari iOS: ketuk tombol Share (↑) → "Add to Home Screen"
+                  </p>
+                </div>
+              )
+            )}
+          </div>
+        ) : isTutorialStep ? (
           /* Tutorial slides */
           <div className="flex-1 flex flex-col items-center justify-center text-center space-y-6">
             {(() => {
-              const slide = tutorialSlides[step];
+              const slide = tutorialSlides[tutorialIndex];
               const Icon = slide.icon;
               return (
                 <>
@@ -200,8 +245,8 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
               );
             })()}
           </div>
-        ) : isStoreStep ? (
-          /* Store setup */
+        ) : (
+          /* Store setup - LAST */
           <div className="flex-1 flex flex-col overflow-y-auto space-y-6 py-4 -mx-1 px-1" style={{ WebkitOverflowScrolling: 'touch' }}>
             <div className="text-center space-y-2">
               <div className="w-16 h-16 rounded-2xl bg-primary/10 text-primary flex items-center justify-center mx-auto">
@@ -261,7 +306,7 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
                   </div>
                   <div>
                     <p className="text-sm font-medium">Muat data contoh</p>
-                    <p className="text-[10px] text-muted-foreground">11 produk, 2 supplier, 2 transaksi demo</p>
+                    <p className="text-[10px] text-muted-foreground">11 produk, 2 supplier, 3 transaksi demo</p>
                   </div>
                 </div>
                 <Switch checked={loadDummy} onCheckedChange={setLoadDummy} />
@@ -288,94 +333,67 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
               </div>
             </div>
           </div>
-        ) : (
-          /* Install step - now LAST, after store setup */
-          <div className="flex-1 flex flex-col items-center justify-center text-center space-y-6">
-            <div className={cn('w-24 h-24 rounded-3xl flex items-center justify-center',
-              isInstalled || installDone ? 'text-success bg-success/10' : 'text-primary bg-primary/10'
-            )}>
-              {isInstalled || installDone ? <CheckCircle2 className="w-12 h-12" /> : <Download className="w-12 h-12" />}
-            </div>
-            <div className="space-y-3">
-              <h2 className="text-2xl font-bold tracking-tight">
-                {isInstalled || installDone ? 'Sudah Terinstall! ✅' : 'Install di HP Kamu'}
-              </h2>
-              <p className="text-muted-foreground leading-relaxed max-w-xs mx-auto">
-                {isInstalled || installDone
-                  ? 'KasirGratisan sudah terinstall sebagai aplikasi. Kamu bisa buka langsung dari home screen!'
-                  : 'Jadikan KasirGratisan sebagai aplikasi di HP kamu. Akses lebih cepat langsung dari home screen, tanpa buka browser!'}
-              </p>
-            </div>
-            {!isInstalled && !installDone && (
-              canInstall ? (
-                <Button
-                  size="lg"
-                  className="h-12 px-8 text-base font-semibold"
-                  onClick={async () => {
-                    const ok = await install();
-                    if (ok) {
-                      setInstallDone(true);
-                      toast.success('Berhasil install KasirGratisan!');
-                    }
-                  }}
-                >
-                  <Download className="w-5 h-5 mr-2" />
-                  Install Sekarang
-                </Button>
-              ) : (
-                <div className="space-y-3 max-w-xs">
-                  <p className="text-sm text-muted-foreground">
-                    Untuk install, buka di browser <strong>Chrome</strong> lalu ketuk menu (⋮) → <strong>"Add to Home screen"</strong> atau <strong>"Install app"</strong>.
-                  </p>
-                  <p className="text-xs text-muted-foreground/70">
-                    Di Safari iOS: ketuk tombol Share (↑) → "Add to Home Screen"
-                  </p>
-                </div>
-              )
-            )}
-          </div>
         )}
       </div>
 
       {/* Navigation */}
-      <div className="px-6 pt-4 flex items-center gap-3" style={{ paddingBottom: 'max(2rem, env(safe-area-inset-bottom, 2rem))' }}>
-        {step > 0 && !isInstallStep && (
-          <Button
-            variant="outline"
-            size="lg"
-            onClick={() => setStep(s => s - 1)}
-            className="h-12"
-          >
-            <ChevronLeft className="w-4 h-4" />
-          </Button>
-        )}
-        {isStoreStep ? (
-          <Button
-            size="lg"
-            className="flex-1 h-12 text-base font-semibold"
-            onClick={handleSaveStore}
-            disabled={!storeName.trim() || saving}
-          >
-            {saving ? 'Menyimpan...' : 'Simpan & Lanjut'}
-            <ChevronRight className="w-4 h-4 ml-1" />
-          </Button>
-        ) : isInstallStep ? (
-          <Button
-            size="lg"
-            className="flex-1 h-12 text-base font-semibold"
-            onClick={handleFinish}
-          >
-            {isInstalled || installDone ? 'Mulai Jualan! 🚀' : 'Lewati & Mulai Jualan 🚀'}
-          </Button>
+      <div className="px-4 pt-4 flex items-center gap-3" style={{ paddingBottom: 'max(2rem, env(safe-area-inset-bottom, 2rem))' }}>
+        {isInstallStep ? (
+          /* Install step: buttons are inline above, only show skip if no native prompt */
+          <>
+            {(isInstalled || installDone) && (
+              <Button
+                size="lg"
+                className="flex-1 h-12 text-base font-semibold"
+                onClick={() => setStep(1)}
+              >
+                Lanjut
+                <ChevronRight className="w-4 h-4 ml-1" />
+              </Button>
+            )}
+            {!canInstall && !isInstalled && !installDone && (
+              <Button
+                size="lg"
+                className="flex-1 h-12 text-base font-semibold"
+                onClick={() => setStep(1)}
+              >
+                Lanjut
+                <ChevronRight className="w-4 h-4 ml-1" />
+              </Button>
+            )}
+          </>
         ) : (
-          <Button
-            size="lg"
-            className="flex-1 h-12 text-base font-semibold"
-            onClick={() => setStep(s => s + 1)}
-          >
-            Lanjut
-            <ChevronRight className="w-4 h-4 ml-1" />
-          </Button>
+          <>
+            {step > 1 && (
+              <Button
+                variant="outline"
+                size="lg"
+                onClick={() => setStep(s => s - 1)}
+                className="h-12"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </Button>
+            )}
+            {isStoreStep ? (
+              <Button
+                size="lg"
+                className="flex-1 h-12 text-base font-semibold"
+                onClick={handleFinish}
+                disabled={!storeName.trim() || saving}
+              >
+                {saving ? 'Menyimpan...' : 'Mulai Jualan! 🚀'}
+              </Button>
+            ) : (
+              <Button
+                size="lg"
+                className="flex-1 h-12 text-base font-semibold"
+                onClick={() => setStep(s => s + 1)}
+              >
+                Lanjut
+                <ChevronRight className="w-4 h-4 ml-1" />
+              </Button>
+            )}
+          </>
         )}
       </div>
       </div>
