@@ -84,27 +84,40 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
     await db.suppliers.bulkAdd(dummySuppliers);
 
     const discNull: 'percentage' | 'nominal' | null = null;
-    const txs = [
-      {
-        items: [
-          { productId: 1, productName: 'Nasi Goreng Spesial', quantity: 2, price: 15000, hpp: 8000, discountType: discNull, discountValue: 0, discountAmount: 0, subtotal: 30000 },
-          { productId: 6, productName: 'Es Teh Manis', quantity: 2, price: 5000, hpp: 1500, discountType: discNull, discountValue: 0, discountAmount: 0, subtotal: 10000 },
-        ],
-        subtotal: 40000, discountType: discNull, discountValue: 0, discountAmount: 0, total: 40000,
-        paymentMethodId: 1, paymentAmount: 50000, change: 10000, profit: 21000,
-        date: new Date(now.getTime() - 3600000), receiptNumber: 'TX-DEMO-001',
-      },
-      {
-        items: [
-          { productId: 3, productName: 'Ayam Bakar', quantity: 1, price: 20000, hpp: 12000, discountType: discNull, discountValue: 0, discountAmount: 0, subtotal: 20000 },
-          { productId: 8, productName: 'Kopi Susu', quantity: 1, price: 10000, hpp: 4000, discountType: discNull, discountValue: 0, discountAmount: 0, subtotal: 10000 },
-        ],
-        subtotal: 30000, discountType: discNull, discountValue: 0, discountAmount: 0, total: 30000,
-        paymentMethodId: 3, paymentAmount: 30000, change: 0, profit: 14000,
-        date: new Date(now.getTime() - 1800000), receiptNumber: 'TX-DEMO-002',
-      },
-    ];
-    await db.transactions.bulkAdd(txs);
+
+    // Transaction 1: Nasi Goreng Spesial x2 + Es Teh Manis x2
+    const tx1Id = await db.transactions.add({
+      subtotal: 40000, discountType: discNull, discountValue: 0, discountAmount: 0, total: 40000,
+      paymentMethodId: 1, paymentAmount: 50000, change: 10000, profit: 21000,
+      date: new Date(now.getTime() - 3600000), receiptNumber: 'TX-DEMO-001',
+    });
+    await db.transactionItems.bulkAdd([
+      { transactionId: tx1Id as number, productId: 1, productName: 'Nasi Goreng Spesial', quantity: 2, price: 15000, hpp: 8000, discountType: discNull, discountValue: 0, discountAmount: 0, subtotal: 30000 },
+      { transactionId: tx1Id as number, productId: 6, productName: 'Es Teh Manis', quantity: 2, price: 5000, hpp: 1500, discountType: discNull, discountValue: 0, discountAmount: 0, subtotal: 10000 },
+    ]);
+
+    // Transaction 2: Ayam Bakar x1 + Kopi Susu x1
+    const tx2Id = await db.transactions.add({
+      subtotal: 30000, discountType: discNull, discountValue: 0, discountAmount: 0, total: 30000,
+      paymentMethodId: 3, paymentAmount: 30000, change: 0, profit: 14000,
+      date: new Date(now.getTime() - 1800000), receiptNumber: 'TX-DEMO-002',
+    });
+    await db.transactionItems.bulkAdd([
+      { transactionId: tx2Id as number, productId: 3, productName: 'Ayam Bakar', quantity: 1, price: 20000, hpp: 12000, discountType: discNull, discountValue: 0, discountAmount: 0, subtotal: 20000 },
+      { transactionId: tx2Id as number, productId: 8, productName: 'Kopi Susu', quantity: 1, price: 10000, hpp: 4000, discountType: discNull, discountValue: 0, discountAmount: 0, subtotal: 10000 },
+    ]);
+
+    // Transaction 3: Nasi Goreng x1 + Sate Ayam x1 + Es Jeruk x1
+    const tx3Id = await db.transactions.add({
+      subtotal: 40000, discountType: discNull, discountValue: 0, discountAmount: 0, total: 40000,
+      paymentMethodId: 1, paymentAmount: 50000, change: 10000, profit: 18500,
+      date: new Date(now.getTime() - 900000), receiptNumber: 'TX-DEMO-003',
+    });
+    await db.transactionItems.bulkAdd([
+      { transactionId: tx3Id as number, productId: 1, productName: 'Nasi Goreng Spesial', quantity: 1, price: 15000, hpp: 8000, discountType: discNull, discountValue: 0, discountAmount: 0, subtotal: 15000 },
+      { transactionId: tx3Id as number, productId: 4, productName: 'Sate Ayam (10 tusuk)', quantity: 1, price: 18000, hpp: 10000, discountType: discNull, discountValue: 0, discountAmount: 0, subtotal: 18000 },
+      { transactionId: tx3Id as number, productId: 7, productName: 'Es Jeruk', quantity: 1, price: 7000, hpp: 2500, discountType: discNull, discountValue: 0, discountAmount: 0, subtotal: 7000 },
+    ]);
   };
 
   const handleSaveStore = async () => {
