@@ -199,7 +199,7 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
           </div>
         ) : isStoreStep ? (
           /* Store setup */
-          <div className="flex-1 flex flex-col overflow-y-auto space-y-6 py-4" style={{ WebkitOverflowScrolling: 'touch' }}>
+          <div className="flex-1 flex flex-col overflow-y-auto space-y-6 py-4 -mx-1 px-1" style={{ WebkitOverflowScrolling: 'touch' }}>
             <div className="text-center space-y-2">
               <div className="w-16 h-16 rounded-2xl bg-primary/10 text-primary flex items-center justify-center mx-auto">
                 <Store className="w-8 h-8" />
