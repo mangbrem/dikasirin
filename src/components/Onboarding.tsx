@@ -177,7 +177,7 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
           ))}
         </div>
 
-      <div className="flex-1 flex flex-col px-6">
+      <div className="flex-1 flex flex-col px-4">
         {!isStoreStep && !isInstallStep ? (
           /* Tutorial slides */
           <div className="flex-1 flex flex-col items-center justify-center text-center space-y-6">
