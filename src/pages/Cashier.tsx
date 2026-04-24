@@ -34,6 +34,7 @@ export default function Kasir() {
   const [tempDiscountValue, setTempDiscountValue] = useState('');
   const [paymentMethodId, setPaymentMethodId] = useState<string>('');
   const [paymentAmount, setPaymentAmount] = useState('');
+  const [isQuickAdding, setIsQuickAdding] = useState(false);
 const [receiptOpen, setReceiptOpen] = useState(false);
   const [lastTransaction, setLastTransaction] = useState<Transaction | null>(null);
   const [lastTxItems, setLastTxItems] = useState<TransactionItemRecord[]>([]);
@@ -146,6 +147,7 @@ const [receiptOpen, setReceiptOpen] = useState(false);
     setTxDiscountValue('');
     setPaymentMethodId('');
     setPaymentAmount('');
+    setIsQuickAdding(false);
     setRemarks('');
   };
 
@@ -310,7 +312,7 @@ const [receiptOpen, setReceiptOpen] = useState(false);
                 <span className="text-primary">Rp {total.toLocaleString('id-ID')}</span>
               </div>
 
-              <Button className="w-full h-12 text-base font-semibold" onClick={() => { setCheckoutOpen(true); setPaymentMethodId(paymentMethods?.[0]?.id?.toString() ?? ''); setPaymentAmount(total.toString()); }}>
+              <Button className="w-full h-12 text-base font-semibold" onClick={() => { setCheckoutOpen(true); setPaymentMethodId(paymentMethods?.[0]?.id?.toString() ?? ''); setPaymentAmount(total.toString()); setIsQuickAdding(false); }}>
                 <CreditCard className="w-5 h-5 mr-2" />
                 Bayar
               </Button>
@@ -351,21 +353,28 @@ const [receiptOpen, setReceiptOpen] = useState(false);
                 {[1000, 2000, 5000, 10000, 20000, 50000, 100000].map(nom => (
                   <button
                     key={nom}
-                    onClick={() => setPaymentAmount(prev => String((Number(prev) || 0) + nom))}
+                    onClick={() => {
+                      if (!isQuickAdding) {
+                        setPaymentAmount(String(nom));
+                        setIsQuickAdding(true);
+                      } else {
+                        setPaymentAmount(prev => String((Number(prev) || 0) + nom));
+                      }
+                    }}
                     className="flex-1 min-w-[calc(25%-6px)] h-9 rounded-lg border border-border bg-muted/50 text-xs font-semibold text-foreground hover:bg-primary/10 hover:border-primary hover:text-primary active:scale-95 transition-all"
                   >
                     {nom >= 1000 ? `${(nom / 1000)}K` : nom}
                   </button>
                 ))}
                 <button
-                  onClick={() => setPaymentAmount(total.toString())}
+                  onClick={() => { setPaymentAmount(total.toString()); setIsQuickAdding(false); }}
                   className="flex-1 min-w-[calc(25%-6px)] h-9 rounded-lg border border-primary/30 bg-primary/5 text-xs font-semibold text-primary hover:bg-primary/10 active:scale-95 transition-all"
                 >
                   Uang Pas
                 </button>
               </div>
               <button
-                onClick={() => setPaymentAmount('0')}
+                onClick={() => { setPaymentAmount('0'); setIsQuickAdding(false); }}
                 className="w-full text-xs text-muted-foreground hover:text-destructive transition-colors py-1"
               >
                 Reset
