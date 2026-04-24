@@ -158,6 +158,9 @@ export default function Receipt({ open, onClose, transaction, items, storeSettin
         <div ref={receiptRef} className="bg-white text-black p-4 rounded-lg mx-auto" style={{ width: '280px', fontFamily: 'monospace', fontSize: '12px' }}>
           {/* Store Header */}
           <div className="text-center mb-2">
+            {storeSettings?.logo && (
+              <img src={storeSettings.logo} alt="Logo" className="w-16 h-16 object-contain mx-auto mb-1" />
+            )}
             <p className="font-bold text-sm">{storeSettings?.storeName || 'Toko'}</p>
             {storeSettings?.address && <p className="text-[10px]">{storeSettings.address}</p>}
             {storeSettings?.phone && <p className="text-[10px]">{storeSettings.phone}</p>}

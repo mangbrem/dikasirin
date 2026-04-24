@@ -116,6 +116,7 @@ export interface StoreSettings {
   onboardingDone: boolean;
   lastBackupAt: Date | null;
   themeColor?: string; // HSL hue string e.g. "25" for orange
+  logo?: string; // base64 JPEG compressed via compressImage()
   deviceId: string;
 }
 

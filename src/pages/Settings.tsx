@@ -1,7 +1,7 @@
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db, type PaymentMethod, type Category } from '@/lib/db';
-import { useState, useEffect } from 'react';
-import { Settings, Store, CreditCard, Tag, Download, Upload, Plus, Trash2, Edit2, Info, Truck, ArrowDownToLine, ArrowUpFromLine, ChevronRight, Receipt, Palette, HardDrive, Package } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { Settings, Store, CreditCard, Tag, Download, Upload, Plus, Trash2, Edit2, Info, Truck, ArrowDownToLine, ArrowUpFromLine, ChevronRight, Receipt, Palette, HardDrive, Package, Camera, X } from 'lucide-react';
 import ThemeColorPicker from '@/components/ThemeColorPicker';
 import { setThemeColor } from '@/hooks/use-theme-color';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -13,6 +13,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { toast } from 'sonner';
 import { exportBackupData } from '@/components/BackupReminder';
+import { compressImage } from '@/lib/image-utils';
 
 export default function Pengaturan() {
   const storeSettings = useLiveQuery(() => db.storeSettings.toCollection().first());
@@ -24,7 +25,8 @@ export default function Pengaturan() {
   const [storeName, setStoreName] = useState('');
   const [storeAddr, setStoreAddr] = useState('');
   const [storePhone, setStorePhone] = useState('');
-
+  const [storeLogo, setStoreLogo] = useState<string | undefined>(undefined);
+  const logoInputRef = useRef<HTMLInputElement>(null);
   // Payment method
   const [pmDialog, setPmDialog] = useState(false);
   const [pmName, setPmName] = useState('');
@@ -52,15 +54,32 @@ export default function Pengaturan() {
     setStoreName(storeSettings?.storeName ?? '');
     setStoreAddr(storeSettings?.address ?? '');
     setStorePhone(storeSettings?.phone ?? '');
+    setStoreLogo(storeSettings?.logo);
     setStoreDialog(true);
   };
 
   const saveStore = async () => {
     if (storeSettings?.id) {
-      await db.storeSettings.update(storeSettings.id, { storeName: storeName.trim(), address: storeAddr.trim(), phone: storePhone.trim() });
+      await db.storeSettings.update(storeSettings.id, { storeName: storeName.trim(), address: storeAddr.trim(), phone: storePhone.trim(), logo: storeLogo || undefined });
       toast.success('Info toko disimpan');
       setStoreDialog(false);
     }
+  };
+
+  const handleLogoSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      toast.error('File harus berupa gambar');
+      return;
+    }
+    try {
+      const compressed = await compressImage(file);
+      setStoreLogo(compressed);
+    } catch {
+      toast.error('Gagal memproses gambar');
+    }
+    if (logoInputRef.current) logoInputRef.current.value = '';
   };
 
   const openPmAdd = () => { setPmEditId(null); setPmName(''); setPmCategory('tunai'); setPmDialog(true); };
@@ -210,8 +229,12 @@ export default function Pengaturan() {
       {/* Store Info */}
       <Card className="border-0 shadow-sm cursor-pointer" onClick={openStoreEdit}>
         <CardContent className="p-4 flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
-            <Store className="w-5 h-5" />
+          <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center overflow-hidden shrink-0">
+            {storeSettings?.logo ? (
+              <img src={storeSettings.logo} alt="Logo" className="w-full h-full object-cover" />
+            ) : (
+              <Store className="w-5 h-5" />
+            )}
           </div>
           <div className="flex-1">
             <p className="text-sm font-semibold">{storeSettings?.storeName || 'Toko Saya'}</p>
@@ -401,6 +424,53 @@ export default function Pengaturan() {
         <DialogContent className="max-w-[95vw] rounded-xl">
           <DialogHeader><DialogTitle>Info Toko</DialogTitle></DialogHeader>
           <div className="space-y-4 mt-2">
+            {/* Logo picker */}
+            <div className="space-y-1.5">
+              <Label>Logo Toko</Label>
+              <div className="flex items-center gap-3">
+                <div
+                  className="w-20 h-20 rounded-xl bg-muted border-2 border-dashed border-border flex items-center justify-center overflow-hidden cursor-pointer hover:border-primary/50 transition-colors"
+                  onClick={() => logoInputRef.current?.click()}
+                >
+                  {storeLogo ? (
+                    <img src={storeLogo} alt="Logo" className="w-full h-full object-cover" />
+                  ) : (
+                    <Camera className="w-6 h-6 text-muted-foreground/50" />
+                  )}
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="h-8 text-xs gap-1.5"
+                    onClick={() => logoInputRef.current?.click()}
+                  >
+                    <Camera className="w-3.5 h-3.5" />
+                    {storeLogo ? 'Ganti Logo' : 'Pilih Logo'}
+                  </Button>
+                  {storeLogo && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 text-xs text-destructive gap-1.5"
+                      onClick={() => setStoreLogo(undefined)}
+                    >
+                      <X className="w-3.5 h-3.5" />
+                      Hapus Logo
+                    </Button>
+                  )}
+                </div>
+                <input
+                  ref={logoInputRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={handleLogoSelect}
+                />
+              </div>
+            </div>
             <div className="space-y-1.5"><Label>Nama Toko</Label><Input value={storeName} onChange={e => setStoreName(e.target.value)} className="h-11" /></div>
             <div className="space-y-1.5"><Label>Alamat</Label><Input value={storeAddr} onChange={e => setStoreAddr(e.target.value)} className="h-11" /></div>
             <div className="space-y-1.5"><Label>Telepon</Label><Input value={storePhone} onChange={e => setStorePhone(e.target.value)} className="h-11" type="tel" /></div>
