@@ -3,17 +3,20 @@ import { db, type Transaction, type TransactionItemRecord } from '@/lib/db';
 import { useState, useEffect } from 'react';
 import { format, startOfDay, endOfDay } from 'date-fns';
 import { id as localeId } from 'date-fns/locale';
-import { ArrowLeft, Search, Receipt as ReceiptIcon, Calendar, ChevronRight, ShoppingBag, CalendarIcon, X } from 'lucide-react';
+import { ArrowLeft, Search, Receipt as ReceiptIcon, Calendar, ChevronRight, ShoppingBag, CalendarIcon, X, Trash2 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar as CalendarPicker } from '@/components/ui/calendar';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import ReceiptDialog from '@/components/Receipt';
+import { toast } from 'sonner';
 
 export default function TransactionHistory() {
   const navigate = useNavigate();
@@ -24,6 +27,8 @@ export default function TransactionHistory() {
   const [receiptOpen, setReceiptOpen] = useState(false);
   const [dateFrom, setDateFrom] = useState<Date | undefined>(undefined);
   const [dateTo, setDateTo] = useState<Date | undefined>(undefined);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [restoreStock, setRestoreStock] = useState(true);
 
   const transactions = useLiveQuery(() =>
     db.transactions.orderBy('date').reverse().toArray()
@@ -108,6 +113,29 @@ export default function TransactionHistory() {
   const clearDateFilter = () => {
     setDateFrom(undefined);
     setDateTo(undefined);
+  };
+
+  const handleDeleteTransaction = async () => {
+    if (!selectedTx?.id) return;
+    try {
+      if (restoreStock) {
+        const items = getTxItems(selectedTx.id);
+        for (const item of items) {
+          const product = await db.products.get(item.productId);
+          if (product) {
+            await db.products.update(item.productId, { stock: product.stock + item.quantity });
+          }
+        }
+      }
+      await db.transactionItems.where('transactionId').equals(selectedTx.id).delete();
+      await db.transactions.delete(selectedTx.id);
+      setDeleteDialogOpen(false);
+      setDetailOpen(false);
+      setSelectedTx(null);
+      toast.success('Transaksi berhasil dihapus');
+    } catch {
+      toast.error('Gagal menghapus transaksi');
+    }
   };
 
   const rp = (n: number) => `Rp ${n.toLocaleString('id-ID')}`;
@@ -331,6 +359,15 @@ export default function TransactionHistory() {
                 <ReceiptIcon className="w-4 h-4 mr-2" />
                 Lihat & Cetak Struk
               </Button>
+
+              <Button
+                variant="outline"
+                className="w-full h-11 text-destructive border-destructive/30 hover:bg-destructive/5"
+                onClick={() => { setRestoreStock(true); setDeleteDialogOpen(true); }}
+              >
+                <Trash2 className="w-4 h-4 mr-2" />
+                Hapus Transaksi
+              </Button>
             </div>
           )}
         </SheetContent>
@@ -347,6 +384,36 @@ export default function TransactionHistory() {
           paymentMethodName={getPaymentName(selectedTx.paymentMethodId)}
         />
       )}
+
+      {/* Delete Confirmation */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent className="max-w-[90vw] rounded-xl">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Hapus Transaksi?</AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-3">
+                <p>Transaksi <span className="font-mono font-semibold">{selectedTx?.receiptNumber}</span> senilai <span className="font-semibold">Rp {selectedTx?.total.toLocaleString('id-ID')}</span> akan dihapus permanen.</p>
+                <div className="flex items-center gap-2">
+                  <Checkbox
+                    id="restore-stock"
+                    checked={restoreStock}
+                    onCheckedChange={(checked) => setRestoreStock(checked === true)}
+                  />
+                  <label htmlFor="restore-stock" className="text-sm cursor-pointer">
+                    Kembalikan stok produk
+                  </label>
+                </div>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Batal</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteTransaction} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Hapus
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
