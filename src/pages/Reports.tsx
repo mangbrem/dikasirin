@@ -1,14 +1,17 @@
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db, type TransactionItemRecord } from '@/lib/db';
 import { useState } from 'react';
-import { BarChart3, TrendingUp, ShoppingCart, Package, DollarSign, ArrowDown, ArrowUp, Minus } from 'lucide-react';
+import { BarChart3, TrendingUp, ShoppingCart, Package, DollarSign, ArrowDown, ArrowUp, Minus, Download } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip } from 'recharts';
 import { format, subDays, startOfDay } from 'date-fns';
+import { Button } from '@/components/ui/button';
+import { toast } from 'sonner';
 
 export default function Laporan() {
   const [period, setPeriod] = useState<'7' | '30'>('7');
+  const [isExporting, setIsExporting] = useState(false);
   const days = Number(period);
 
   const transactions = useLiveQuery(async () => {
@@ -63,12 +66,100 @@ export default function Laporan() {
 
   const rp = (n: number) => `Rp ${n.toLocaleString('id-ID')}`;
 
+  // Logika Export Semua Transaksi ke CSV
+  const handleExportCSV = async () => {
+    setIsExporting(true);
+    try {
+      // Ambil seluruh data riwayat secara langsung dari IndexedDB tanpa limit tanggal
+      const allTx = await db.transactions.toArray();
+      const allItemRecords = await db.transactionItems.toArray();
+      const allPm = await db.paymentMethods.toArray();
+
+      if (allTx.length === 0) {
+        toast.info("Belum ada data transaksi untuk diekspor");
+        setIsExporting(false);
+        return;
+      }
+
+      // 1. Buat Header
+      const headers = [
+        "ID Transaksi",
+        "Tanggal",
+        "Nomor Struk",
+        "Metode Pembayaran",
+        "Total Penjualan",
+        "Total Modal (HPP)",
+        "Laba Kotor",
+        "Item Dibeli"
+      ];
+
+      // 2. Format baris data
+      const rows = allTx.map(tx => {
+        const pm = allPm.find(p => p.id === tx.paymentMethodId)?.name || 'Unknown';
+        
+        // Cari semua item di dalam transaksi ini
+        const itemsInTx = allItemRecords.filter(i => i.transactionId === tx.id);
+        const totalHppTx = itemsInTx.reduce((sum, i) => sum + (i.hpp * i.quantity), 0);
+        
+        // Format daftar item pembelanjaan: "Kopi (2); Roti (1)"
+        const itemNames = itemsInTx.map(i => `${i.productName} (${i.quantity})`).join('; ');
+        
+        const dateStr = format(new Date(tx.date), 'yyyy-MM-dd HH:mm');
+
+        return [
+          tx.id,
+          dateStr,
+          tx.receiptNumber,
+          pm,
+          tx.total,
+          totalHppTx,
+          tx.profit,
+          `"${itemNames}"` // Dibungkus tanda kutip agar koma pada nama barang tidak merusak kolom CSV
+        ].join(',');
+      });
+
+      // 3. Rakit dan Download
+      const csvContent = [headers.join(','), ...rows].join('\n');
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement("a");
+      const url = URL.createObjectURL(blob);
+      
+      link.setAttribute("href", url);
+      link.setAttribute("download", `Laporan_Semua_Penjualan_${format(new Date(), 'yyyy-MM-dd')}.csv`);
+      link.style.visibility = 'hidden';
+      
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      toast.success("File CSV berhasil diunduh!");
+    } catch (error) {
+      console.error(error);
+      toast.error("Gagal mengekspor laporan.");
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   return (
     <div className="px-4 pt-6 pb-20 space-y-5">
-      <h1 className="text-xl font-bold flex items-center gap-2">
-        <BarChart3 className="w-5 h-5 text-primary" />
-        Laporan
-      </h1>
+      {/* Header dengan tambahan Tombol Export */}
+      <div className="flex items-center justify-between">
+        <h1 className="text-xl font-bold flex items-center gap-2">
+          <BarChart3 className="w-5 h-5 text-primary" />
+          Laporan
+        </h1>
+        <Button 
+          variant="outline" 
+          size="sm" 
+          onClick={handleExportCSV} 
+          disabled={isExporting}
+          className="h-8 gap-2 text-xs"
+        >
+          <Download className="w-3.5 h-3.5" />
+          {isExporting ? 'Proses...' : 'Export CSV'}
+        </Button>
+      </div>
 
       <Tabs value={period} onValueChange={v => setPeriod(v as '7' | '30')}>
         <TabsList className="w-full">
